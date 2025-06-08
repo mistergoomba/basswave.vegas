@@ -1,103 +1,221 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
+import { Orbitron, Bungee_Shade } from 'next/font/google';
+import { FaChevronDown } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+
+import BasswaveLogo from '../public/basswave-logo.png';
+import ScrollVideoCanvas from '@/components/ScrollVideoCanvas';
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+});
+
+const bungee = Bungee_Shade({
+  subsets: ['latin'],
+  weight: '400',
+});
+
+export default function IntroSection() {
+  const [scrollY, setScrollY] = useState(0);
+  const [isFixed, setIsFixed] = useState(false);
+  const [showBadge, setShowBadge] = useState(false);
+  const [isBlueSquareStuck, setIsBlueSquareStuck] = useState(false);
+  const [showFinalLogo, setShowFinalLogo] = useState(false);
+
+  const endTriggerRef = useRef();
+  const blueSquareRef = useRef();
+  const logoRef = useRef();
+  const badgeTriggerRef = useRef();
+  const logoTriggerRef = useRef();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+
+      if (logoTriggerRef.current) {
+        const distanceFromTop = logoTriggerRef.current.getBoundingClientRect().top;
+        setIsFixed(distanceFromTop <= 0);
+      }
+
+      if (badgeTriggerRef.current) {
+        const triggerY = badgeTriggerRef.current.getBoundingClientRect().top;
+        setShowBadge(triggerY <= window.innerHeight / 2 && triggerY >= 0);
+      }
+
+      if (blueSquareRef.current) {
+        const triggerY = blueSquareRef.current.getBoundingClientRect().top;
+        const screenCenter = window.innerHeight / 2;
+        setIsBlueSquareStuck(triggerY <= screenCenter && triggerY >= 0);
+      }
+
+      if (endTriggerRef.current) {
+        const triggerY = endTriggerRef.current.getBoundingClientRect().top;
+        const triggerZone = window.innerHeight * 0.75;
+        setShowFinalLogo(triggerY <= triggerZone);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <section className='relative min-h-[400vh] w-full text-white'>
+      <ScrollVideoCanvas />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Scrollable logo block */}
+      <div
+        className='relative h-[100vh] pt-[40vh]'
+        style={{ opacity: showFinalLogo ? 0 : 1, transition: 'opacity 0.5s ease' }}
+      >
+        {/* Dummy div to track position */}
+        <div ref={logoTriggerRef} className='h-[1px] w-full' />
+
+        <div style={{ height: isFixed ? logoRef.current?.offsetHeight : 'auto' }} />
+
+        <div
+          ref={logoRef}
+          className={`flex flex-col items-center justify-center transition-all duration-300 ${
+            isFixed ? 'fixed top-0 left-0 w-full z-20' : 'relative'
+          }`}
+        >
+          <Image src={BasswaveLogo} alt='Basswave Logo' className='w-60 h-auto mb-2' priority />
+          <h2
+            className={`text-3xl tracking-widest uppercase opacity-0 animate-fade-in ${orbitron.className}`}
+            style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}
+          >
+            Presents
+          </h2>
+        </div>
+      </div>
+
+      {/* Scroll Down Indicator */}
+      <div
+        className='fixed bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-sm text-white/70 transition-opacity duration-300 z-20 pointer-events-none'
+        style={{
+          opacity: showFinalLogo ? 0 : Math.max(0, 1 - scrollY / 500),
+          transition: 'opacity 0.5s ease',
+        }}
+      >
+        <span className='mb-1 text-xs tracking-widest'>scroll down</span>
+        <FaChevronDown className='animate-bounce text-2xl' />
+      </div>
+
+      {/* Trigger zone for badge */}
+      <div ref={badgeTriggerRef} className='h-[50vh] w-full' />
+
+      {/* Animated sunburst badge */}
+      <AnimatePresence>
+        {showBadge && !showFinalLogo && (
+          <motion.div
+            key='badge'
+            initial={{ clipPath: 'circle(0% at 50% 50%)', opacity: 0 }}
+            animate={{ clipPath: 'circle(150% at 50% 50%)', opacity: 1 }}
+            exit={{ clipPath: 'circle(0% at 50% 50%)', opacity: 0 }}
+            transition={{ duration: 1 }}
+            className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-3xl md:text-5xl p-8 rounded-full bg-blue-900/90 text-white max-w-[400px] ${bungee.className}`}
+          >
+            A POOL PARTY FOR THE AGES!
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Blue square scroll trigger */}
+      <div ref={blueSquareRef} className='h-[100vh] w-full bg-transparent' />
+
+      {/* Blue square */}
+      <AnimatePresence>
+        {isBlueSquareStuck && !showFinalLogo && (
+          <motion.div
+            key='blue-square'
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.5 }}
+            className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30'
           >
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src='/july-13-lexi.png'
+              alt='Lexi Info'
+              width={300}
+              height={300}
+              className='max-w-[80vw] h-auto'
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Scroll trigger for final logo reveal */}
+      <div ref={endTriggerRef} className='h-[100vh] w-full bg-transparent' />
+
+      {/* Final AQUARIUM logo + link */}
+      <AnimatePresence>
+        {showFinalLogo && (
+          <motion.div
+            key='aquarium-logo'
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 1 }}
+            className='fixed inset-0 flex flex-col items-center justify-center text-center z-40'
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <Image
+              src='/the-aquarium.png'
+              alt='The Aquarium Logo'
+              width={400}
+              height={150}
+              className='mb-6 w-full max-w-[500px] h-auto'
+            />
+            <motion.a
+              href='#'
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.2, duration: 1 }}
+              className='px-6 py-3 bg-blue-600 text-white rounded-lg text-lg shadow-lg animate-pulse-glow'
+            >
+              More Info
+            </motion.a>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          0% {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 1s ease-out forwards;
+        }
+
+        @keyframes pulse-glow {
+          0% {
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 18px rgba(255, 255, 255, 0.8);
+          }
+          100% {
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+          }
+        }
+
+        .animate-pulse-glow {
+          animation: pulse-glow 2s infinite;
+        }
+      `}</style>
+    </section>
   );
 }
