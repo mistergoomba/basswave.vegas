@@ -98,7 +98,7 @@ export default function IntroSection() {
       <div
         className='fixed bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-sm text-white/70 transition-opacity duration-300 z-20 pointer-events-none'
         style={{
-          opacity: showFinalLogo ? 0 : Math.max(0, 1 - scrollY / 500),
+          opacity: showFinalLogo ? 0 : 1,
           transition: 'opacity 0.5s ease',
         }}
       >
