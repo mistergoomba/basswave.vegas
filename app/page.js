@@ -9,15 +9,46 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BasswaveLogo from '../public/basswave-logo.png';
 import ScrollVideoCanvas from '@/components/ScrollVideoCanvas';
 
-const orbitron = Orbitron({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-});
+import SplashLeft from '../public/splash-left.png';
+import SplashRight from '../public/splash-right.png';
+import TheAquarium from '../public/the-aquarium.png';
 
-const bungee = Bungee_Shade({
-  subsets: ['latin'],
-  weight: '400',
-});
+const orbitron = Orbitron({ subsets: ['latin'], weight: ['400', '700'] });
+const bungee = Bungee_Shade({ subsets: ['latin'], weight: '400' });
+
+function HalfCircleLeft({ rotation }) {
+  return (
+    <div
+      className='fixed top-1/2 z-50'
+      style={{
+        width: '100vw',
+        left: '-100vw',
+        transform: `translateY(-50%) rotate(${rotation}deg)`,
+        transformOrigin: '100% 50%',
+        pointerEvents: 'none',
+      }}
+    >
+      <Image src={SplashLeft} alt='Splash Left' className='w-full h-auto' />
+    </div>
+  );
+}
+
+function HalfCircleRight({ rotation }) {
+  return (
+    <div
+      className='fixed top-1/2 z-50'
+      style={{
+        width: '100vw',
+        right: '-100vw',
+        transform: `translateY(-50%) rotate(${rotation}deg)`,
+        transformOrigin: '0% 50%',
+        pointerEvents: 'none',
+      }}
+    >
+      <Image src={SplashRight} alt='Splash Right' className='w-full h-auto' />
+    </div>
+  );
+}
 
 export default function IntroSection() {
   const [scrollY, setScrollY] = useState(0);
@@ -25,12 +56,14 @@ export default function IntroSection() {
   const [showBadge, setShowBadge] = useState(false);
   const [isBlueSquareStuck, setIsBlueSquareStuck] = useState(false);
   const [showFinalLogo, setShowFinalLogo] = useState(false);
+  const [splashProgress, setSplashProgress] = useState(0);
 
   const endTriggerRef = useRef();
   const blueSquareRef = useRef();
   const logoRef = useRef();
   const badgeTriggerRef = useRef();
   const logoTriggerRef = useRef();
+  const splashStartRef = useRef();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,10 +85,23 @@ export default function IntroSection() {
         setIsBlueSquareStuck(triggerY <= screenCenter && triggerY >= 0);
       }
 
-      if (endTriggerRef.current) {
-        const triggerY = endTriggerRef.current.getBoundingClientRect().top;
-        const triggerZone = window.innerHeight * 0.75;
-        setShowFinalLogo(triggerY <= triggerZone);
+      if (splashStartRef.current && endTriggerRef.current) {
+        const startRect = splashStartRef.current.getBoundingClientRect();
+        const endRect = endTriggerRef.current.getBoundingClientRect();
+
+        const viewportHeight = window.innerHeight;
+        const scrollStart = viewportHeight;
+        const scrollEnd = 0;
+
+        const totalDistance = startRect.top - endRect.top;
+        const currentDistance = Math.min(
+          Math.max(viewportHeight - startRect.top, 0),
+          totalDistance
+        );
+        const progress = totalDistance > 0 ? currentDistance / totalDistance : 0;
+
+        setSplashProgress(progress);
+        setShowFinalLogo(progress > 0);
       }
     };
 
@@ -64,20 +110,19 @@ export default function IntroSection() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const leftRotation = -360 * splashProgress;
+  const rightRotation = 360 * splashProgress;
+
   return (
-    <section className='relative min-h-[400vh] w-full text-white'>
+    <section className='relative min-h-[600vh] w-full text-white'>
       <ScrollVideoCanvas />
 
-      {/* Scrollable logo block */}
       <div
         className='relative h-[100vh] pt-[40vh]'
         style={{ opacity: showFinalLogo ? 0 : 1, transition: 'opacity 0.5s ease' }}
       >
-        {/* Dummy div to track position */}
         <div ref={logoTriggerRef} className='h-[1px] w-full' />
-
         <div style={{ height: isFixed ? logoRef.current?.offsetHeight : 'auto' }} />
-
         <div
           ref={logoRef}
           className={`flex flex-col items-center justify-center transition-all duration-300 ${
@@ -94,22 +139,16 @@ export default function IntroSection() {
         </div>
       </div>
 
-      {/* Scroll Down Indicator */}
       <div
         className='fixed bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center text-sm text-white/70 transition-opacity duration-300 z-20 pointer-events-none'
-        style={{
-          opacity: showFinalLogo ? 0 : 1,
-          transition: 'opacity 0.5s ease',
-        }}
+        style={{ opacity: showFinalLogo ? 0 : 1, transition: 'opacity 0.5s ease' }}
       >
         <span className='mb-1 text-xs tracking-widest'>scroll down</span>
         <FaChevronDown className='animate-bounce text-2xl' />
       </div>
 
-      {/* Trigger zone for badge */}
       <div ref={badgeTriggerRef} className='h-[50vh] w-full' />
 
-      {/* Animated sunburst badge */}
       <AnimatePresence>
         {showBadge && !showFinalLogo && (
           <motion.div
@@ -125,10 +164,8 @@ export default function IntroSection() {
         )}
       </AnimatePresence>
 
-      {/* Blue square scroll trigger */}
       <div ref={blueSquareRef} className='h-[100vh] w-full bg-transparent' />
 
-      {/* Blue square */}
       <AnimatePresence>
         {isBlueSquareStuck && !showFinalLogo && (
           <motion.div
@@ -150,39 +187,47 @@ export default function IntroSection() {
         )}
       </AnimatePresence>
 
-      {/* Scroll trigger for final logo reveal */}
-      <div ref={endTriggerRef} className='h-[100vh] w-full bg-transparent' />
+      <div ref={splashStartRef} className='h-[100vh] w-full bg-transparent' />
+      <div ref={endTriggerRef} className='h-[200vh] w-full bg-transparent' />
 
-      {/* Final AQUARIUM logo + link */}
+      <HalfCircleLeft rotation={leftRotation} />
+      <HalfCircleRight rotation={rightRotation} />
+
       <AnimatePresence>
-        {showFinalLogo && (
+        {showFinalLogo === 1 && (
           <motion.div
-            key='aquarium-logo'
+            key='aquarium-final'
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 1 }}
-            className='fixed inset-0 flex flex-col items-center justify-center text-center z-40'
+            className='fixed inset-0 flex items-center justify-center z-40 bg-black'
           >
             <Image
-              src='/the-aquarium.png'
+              src={TheAquarium}
               alt='The Aquarium Logo'
-              width={400}
-              height={150}
-              className='mb-6 w-full max-w-[500px] h-auto'
+              width={500}
+              height={200}
+              className='w-full max-w-[500px] h-auto'
             />
-            <motion.a
-              href='#'
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2, duration: 1 }}
-              className='px-6 py-3 bg-blue-600 text-white rounded-lg text-lg shadow-lg animate-pulse-glow'
-            >
-              More Info
-            </motion.a>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <div
+        className='relative z-40 transition-opacity duration-500'
+        style={{ opacity: showFinalLogo ? 1 : 0 }}
+      >
+        <section className='min-h-screen bg-white text-black flex items-center justify-center'>
+          <div className='max-w-xl text-center'>
+            <h2 className='text-4xl font-bold mb-4'>The Splash Zone</h2>
+            <p className='text-lg'>
+              Here’s all the juicy info we washed in just for you. Pool party details, RSVP links,
+              etc.
+            </p>
+          </div>
+        </section>
+      </div>
 
       <style jsx>{`
         @keyframes fade-in {
@@ -195,25 +240,8 @@ export default function IntroSection() {
             transform: translateY(0);
           }
         }
-
         .animate-fade-in {
           animation: fade-in 1s ease-out forwards;
-        }
-
-        @keyframes pulse-glow {
-          0% {
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
-          }
-          50% {
-            box-shadow: 0 0 18px rgba(255, 255, 255, 0.8);
-          }
-          100% {
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
-          }
-        }
-
-        .animate-pulse-glow {
-          animation: pulse-glow 2s infinite;
         }
       `}</style>
     </section>
